@@ -1,0 +1,181 @@
+---
+- name: Installation Docker Compose et déploiement WordPress
+  hosts: local
+  become: yes
+  vars:
+    wordpress_dir: "/opt/wordpress"
+    project_dir: "{{ playbook_dir }}"
+
+  tasks:
+    - name: Mise à jour du cache apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Installation des dépendances
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Ajout de la clé GPG Docker pour Debian
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+      when: ansible_distribution == "Debian"
+
+    - name: Ajout du dépôt Docker pour Debian
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+      when: ansible_distribution == "Debian"
+
+    - name: Ajout de la clé GPG Docker pour Ubuntu
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Ajout du dépôt Docker pour Ubuntu
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Installation de Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Démarrage et activation de Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Installer docker-compose
+      apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Créer le dossier de l'application
+      file:
+        path: "{{ wordpress_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copier le docker-compose.yml
+      copy:
+        src: "{{ project_dir }}/docker-compose.yml"
+        dest: "{{ wordpress_dir }}/docker-compose.yml"
+        mode: '0644'
+      register: compose_file_changed
+
+    - name: Copier le fichier .env
+      copy:
+        src: "{{ project_dir }}/.env"
+        dest: "{{ wordpress_dir }}/.env"
+        mode: '0600'
+      register: env_file_changed
+
+    - name: Vérifier si les conteneurs WordPress existent déjà
+      shell: docker ps -a --filter "name=wordpress" --format "{{`{{.Names}}`}}"
+      register: existing_containers
+      changed_when: false
+      failed_when: false
+
+    - name: Afficher l'état actuel
+      debug:
+        msg: "Conteneurs existants: {{ existing_containers.stdout_lines }}"
+
+    - name: Arrêter les conteneurs si fichiers modifiés
+      shell: docker-compose down
+      args:
+        chdir: "{{ wordpress_dir }}"
+      when: 
+        - existing_containers.stdout_lines | length > 0
+        - (compose_file_changed.changed or env_file_changed.changed)
+      failed_when: false
+
+    - name: Lancer WordPress avec docker-compose
+      shell: docker-compose up -d --remove-orphans
+      args:
+        chdir: "{{ wordpress_dir }}"
+      register: compose_output
+      changed_when: "'Creating' in compose_output.stderr or 'Starting' in compose_output.stderr"
+
+    - name: Afficher le résultat du docker-compose
+      debug:
+        msg: "{{ compose_output.stderr_lines | default([]) }}"
+
+    - name: Attendre que les conteneurs soient prêts
+      pause:
+        seconds: 15
+      when: compose_output.changed
+
+    - name: Vérification de l'état des conteneurs
+      shell: docker ps --filter "name=wordpress" --format "table {{`{{.Names}}\t{{.Status}}\t{{.Ports}}`}}"
+      register: docker_ps
+      changed_when: false
+
+    - name: Affichage des conteneurs en cours d'exécution
+      debug:
+        var: docker_ps.stdout_lines
+
+    - name: Vérifier que WordPress répond
+      uri:
+        url: http://localhost:8080
+        status_code: [200, 302]
+      register: wordpress_check
+      retries: 5
+      delay: 3
+      until: wordpress_check.status in [200, 302]
+      ignore_errors: yes
+
+    - name: Vérifier que PHPMyAdmin répond
+      uri:
+        url: http://localhost:8081
+        status_code: [200, 302]
+      register: phpmyadmin_check
+      retries: 5
+      delay: 3
+      until: phpmyadmin_check.status in [200, 302]
+      ignore_errors: yes
+
+    - name: Message de succès
+      debug:
+        msg: 
+          - "=========================================="
+          - "✓ Installation terminée avec succès !"
+          - "=========================================="
+          - ""
+          - "📦 Services disponibles :"
+          - "  • WordPress    : http://localhost:8080"
+          - "  • PHPMyAdmin   : http://localhost:8081"
+          - "  • MySQL        : localhost:3306"
+          - ""
+          - "🔑 Connexion PHPMyAdmin :"
+          - "  • Serveur      : db"
+          - "  • Utilisateur  : {{ lookup('env', 'MYSQL_USER') | default('wordpress', true) }}"
+          - "  • Mot de passe : (voir fichier .env)"
+          - ""
+          - "📂 Données persistées dans : {{ wordpress_dir }}"
+          - ""
+          - "🛠️  Commandes utiles :"
+          - "  • Arrêter      : cd {{ wordpress_dir }} && docker-compose down"
+          - "  • Redémarrer   : cd {{ wordpress_dir }} && docker-compose restart"
+          - "  • Voir logs    : cd {{ wordpress_dir }} && docker-compose logs -f"
+          - "  • Reset complet: cd {{ wordpress_dir }} && docker-compose down -v"
+          - "=========================================="
