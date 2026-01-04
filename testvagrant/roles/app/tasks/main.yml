@@ -1,0 +1,30 @@
+- name: Lancer un conteneur Nginx
+  community.docker.docker_container:
+    name: nginx
+    image: nginx:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "80:80"
+- name: Installer docker-compose
+  apt:
+    name: docker-compose
+    state: present
+    update_cache: yes
+
+- name: Créer le dossier de l'application
+  file:
+    path: /opt/wordpress
+    state: directory
+
+- name: Copier le docker-compose.yml
+  copy:
+    src: docker-compose.yml
+    dest: /opt/wordpress/docker-compose.yml
+
+- name: Lancer WordPress avec docker-compose
+  community.docker.docker_compose_v2:
+    project_src: /opt/wordpress
+    state: present
+
+

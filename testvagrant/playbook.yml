@@ -1,0 +1,6 @@
+- name: Configuration cloud-1
+  hosts: web
+  become: true
+  roles:
+    - app
+
