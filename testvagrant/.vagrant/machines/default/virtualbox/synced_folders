@@ -1,1 +1,1 @@
-{"virtualbox":{"/vagrant":{"guestpath":"/vagrant","hostpath":"/home/redarnet/github/Cloud-1/testvagrant","disabled":false,"__vagrantfile":true}}}
+{"virtualbox":{"/vagrant/":{"guestpath":"/vagrant","hostpath":"/home/redarnet/github/Cloud-1/testvagrant","disabled":false,"__vagrantfile":true}}}

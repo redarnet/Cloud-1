@@ -1,0 +1,7 @@
+---
+- name: Déployer WordPress
+  community.docker.docker_compose_v2:
+    project_src: "/opt/wordpress"
+    services:
+      - wordpress
+    state: present

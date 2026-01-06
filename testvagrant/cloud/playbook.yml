@@ -1,0 +1,12 @@
+---
+- name: Déploiement WordPress
+  hosts: local
+  become: yes
+  vars:
+    wordpress_dir: "/opt/wordpress"
+    project_dir: "{{ playbook_dir }}"   # <-- ici
+  roles:
+    - docker
+    - db
+    - wordpress
+    - phpmyadmin

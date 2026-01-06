@@ -1,0 +1,73 @@
+---
+- name: Mise à jour du cache apt
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Installer les dépendances système
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ajouter la clé GPG Docker
+  apt_key:
+    url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+    state: present
+
+- name: Ajouter le dépôt Docker
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Installer Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose
+    state: present
+    update_cache: yes
+
+- name: Démarrer Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+- name: Démarrage et activation de Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Installer docker-compose
+  apt:
+    name: docker-compose
+    state: present
+    update_cache: yes
+
+- name: Créer le dossier de l'application
+  file:
+    path: "/opt/wordpress"
+    state: directory
+    mode: '0755'
+
+- name: Copier le docker-compose.yml
+  copy:
+    src: "{{ project_dir }}/docker-compose.yml"
+    dest: "/opt/wordpress/docker-compose.yml"
+    mode: '0644'
+
+- name: Copier le fichier .env
+  copy:
+    src: "{{ project_dir }}/.env"
+    dest: "/opt/wordpress/.env"
+    mode: '0600'
+

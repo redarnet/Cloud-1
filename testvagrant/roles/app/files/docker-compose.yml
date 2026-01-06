@@ -1,35 +1,42 @@
-version: "3.8"
+version: '3.8'
 
 services:
   db:
-    image: mariadb:10.6
+    image: mysql:8.0
     container_name: wordpress_db
     restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wpuser
-      MYSQL_PASSWORD: wppass
+    networks:
+      - wordpress_network
 
   wordpress:
-    image: wordpress:6.4-php8.2-apache
-    container_name: wordpress
+    image: wordpress:latest
+    container_name: wordpress_app
+    restart: always
     depends_on:
       - db
-    restart: always
     ports:
-      - "80:80"
-    volumes:
-      - wp_data:/var/www/html
+      - "8080:80"
     environment:
       WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_DB_USER: wpuser
-      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - wordpress_network
 
 volumes:
   db_data:
-  wp_data:
+  wordpress_data:
 
+networks:
+  wordpress_network:
+    driver: bridge
