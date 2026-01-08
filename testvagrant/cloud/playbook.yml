@@ -1,12 +1,18 @@
 ---
-- name: Déploiement WordPress
+- name: Déploiement WordPress complet
   hosts: local
   become: yes
   vars:
     wordpress_dir: "/opt/wordpress"
-    project_dir: "{{ playbook_dir }}"   # <-- ici
+    project_dir: "{{ playbook_dir }}"
+    nginx_http_port: 80
+    nginx_https_port: 443
+    nginx_domain: "monsite.com"
+    nginx_phpmyadmin_subdomain: "pma.monsite.com"
+
   roles:
     - docker
     - db
     - wordpress
     - phpmyadmin
+    - nginx

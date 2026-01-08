@@ -1,0 +1,68 @@
+
+
+Arborescence ?
+cloud-1/
+├── ansible/
+│   ├── inventory/
+│   │   └── scaleway.ini
+│   ├── playbook.yml
+│   └── roles/
+│       ├── docker/  / compose ? 
+│       ├── app/   > wordrpesse ?
+│       └── security/
+├── infra/
+│   └── scaleway.tf   # optionnel
+└── README.md
+
+
+L’inventaire Ansible sert à décrire les machines à gérer, 
+leurs adresses IP réelles et leur organisation logique en groupes.
+Un host représente une machine unique, et un groupe permet 
+de cibler plusieurs machines en une seule fois lors de l’exécution d’un playbook.
+Les groupes peuvent être hiérarchisés avec children afin
+ de représenter des rôles ou des périmètres plus larges (ex. network, datacenter).
+La directive hosts: dans un playbook définit précisément 
+sur quelles machines les tâches seront exécutées, 
+sans aucune “intelligence” implicite d’Ansible.
+Si une tâche (comme installer nginx ou lancer un 
+conteneur Docker) cible un groupe, elle s’exécute
+ sur tous les hôtes de ce groupe.
+Enfin, ansible-playbook n’exécute ou ne démarre des applications 
+(y compris Docker) que si cela est explicitement décrit dans le playbook,
+ et uniquement au moment de son exécution.
+
+ 3. Ansible ≠ orchestrateur en continu
+C’est crucial :
+Ansible est déclaratif et ponctuel
+Il n’observe pas l’état des conteneurs
+Il n’auto-redémarre rien tout seul
+Après l’exécution :
+Si un conteneur tombe → Ansible ne fait rien
+Il faudra relancer le playbook ou utiliser Docker/Kubernetes
+
+
+2. Rôle de Terraform
+Terraform = Infrastructure as Code
+Il sert à :
+créer, modifier, détruire des ressources
+parler aux API des cloud providers (AWS, Azure, GCP, VMware, OpenStack…)
+Exemples :
+créer 3 VM
+créer un réseau
+attacher des IP
+Terraform ne configure pas correctement les OS.
+3. Rôle d’Ansible
+Ansible = Configuration Management / Automation
+Il sert à :
+installer des logiciels
+configurer des services
+déployer des applications
+orchestrer Docker
+Ansible ne crée pas l’infrastructure cloud.
+
+
+Flux classique :
+-Terraform crée les VM
+-Terraform expose leurs IP
+-Ansible se connecte aux VM
+-Ansible installe et configure tout
