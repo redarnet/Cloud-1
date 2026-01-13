@@ -1,0 +1,19 @@
+# 1. Tu lances depuis ton Mac
+ansible-playbook -i inventory/scaleway.ini playbook.yml
+```
+
+**Ce qui se passe ensuite :**
+```
+┌─────────────┐                          ┌──────────────────┐
+│   Ton Mac   │    SSH (connexion)       │  Serveur Scaleway│
+│             │ ───────────────────────► │                  │
+│  Ansible    │                          │                  │
+│  Python     │    Commandes Docker      │  Docker          │
+│  Playbooks  │ ───────────────────────► │  MySQL ⬇️        │
+│             │                          │  WordPress ⬇️    │
+│             │    Configs Nginx         │  Nginx ⬇️        │
+│             │ ───────────────────────► │                  │
+└─────────────┘                          └──────────────────┘
+     ↑                                            │
+     │          Logs de résultat                  │
+     └────────────────────────────────────────────┘

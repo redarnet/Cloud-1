@@ -1,6 +1,6 @@
 # Redirection HTTP vers HTTPS
 server {
-    listen 80 default_server;
+    listen 80 163.172.162.141;
     server_name _;
     
     # Rediriger tout le trafic HTTP vers HTTPS
@@ -9,7 +9,7 @@ server {
 
 # HTTPS pour WordPress
 server {
-    listen 443 ssl default_server;
+    listen 443 ssl 163.172.162.141;
     server_name _;
 
     # Certificats SSL

@@ -1,10 +1,18 @@
 
+mecredi
+>    Lancer serveur depuis vm > bonne clef ssh 
+>    Verifier nginx avoir le bon site + securite
+>    Verifier sujet 42 
+
+
+>  tout teser avec intra42
+>  pret a push le projet
+
+envoyer cv
 
 
 
-faire marcher docker-compose + ansible + wordrpesse
+jeudi 
+	push + valider
 
-
-
-et 
-    demarrer scaleway ? 
+   

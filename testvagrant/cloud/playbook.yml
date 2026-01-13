@@ -1,6 +1,6 @@
 ---
 - name: Déploiement WordPress complet
-  hosts: local
+  hosts: scaleway
   become: yes
   vars:
     wordpress_dir: "/opt/wordpress"
