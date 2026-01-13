@@ -1,0 +1,16 @@
+
+apt update && apt upgrade -y
+
+
+apt install -y \
+  ca-certificates \
+  curl \
+  gnupg \
+  lsb-release \
+  git \
+  sudo
+
+apt update && apt upgrade -y
+
+
+
