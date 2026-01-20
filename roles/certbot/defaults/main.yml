@@ -1,0 +1,12 @@
+
+certbot_email: "darnetremi@gmail.com"
+certbot_webroot: "/var/www/certbot"
+
+certbot_domains:
+  - "{{ nginx_domain }}"
+  - "www.{{ nginx_domain }}"
+  - "phpmyadmin.{{ nginx_domain }}"
+
+certbot_cert_path: "/etc/letsencrypt/live/{{ nginx_domain }}"
+
+certbot_nginx_certs: "{{ wordpress_dir }}/nginx/certs"

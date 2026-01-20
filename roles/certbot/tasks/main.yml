@@ -1,0 +1,108 @@
+---
+# Dépendances système
+
+- name: Installer les dépendances nécessaires
+  apt:
+    name:
+      - snapd
+      - cron
+    state: present
+    update_cache: yes
+
+- name: S'assurer que cron est actif
+  service:
+    name: cron
+    state: started
+    enabled: yes
+
+# Installation de Certbot (snap officiel)
+
+- name: Installer core snap
+  command: snap install core
+  args:
+    creates: /snap/bin/core
+
+- name: Mettre à jour core snap
+  command: snap refresh core
+  changed_when: false
+  ignore_errors: yes
+
+- name: Supprimer certbot via apt s'il existe
+  apt:
+    name: certbot
+    state: absent
+
+- name: Installer certbot via snap
+  snap:
+    name: certbot
+    classic: yes
+    state: present
+
+- name: Créer le lien symbolique certbot
+  file:
+    src: /snap/bin/certbot
+    dest: /usr/bin/certbot
+    state: link
+  ignore_errors: yes
+
+# Webroot pour ACME challenge
+
+- name: Créer le dossier webroot ACME
+  file:
+    path: "{{ certbot_webroot }}"
+    state: directory
+    mode: '0755'
+
+# Vérification du certificat
+
+- name: Vérifier si le certificat existe déjà
+  stat:
+    path: "{{ certbot_cert_path }}/fullchain.pem"
+  register: certbot_cert
+
+# Génération du certificat Let's Encrypt
+
+- name: Générer le certificat Let's Encrypt (webroot)
+  command: >
+    certbot certonly
+    --webroot
+    --webroot-path {{ certbot_webroot }}
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email }}
+    {% for domain in certbot_domains %}
+    -d {{ domain }}
+    {% endfor %}
+  when: not certbot_cert.stat.exists
+  register: certbot_result
+
+- name: Copier les certificats dans nginx
+  shell: |
+    cp {{ certbot_cert_path }}/fullchain.pem {{ certbot_nginx_certs }}/fullchain.pem
+    cp {{ certbot_cert_path }}/privkey.pem {{ certbot_nginx_certs }}/privkey.pem
+
+
+# Redémarrage Nginx Docker
+
+- name: Redémarrer Nginx après génération du certificat
+  command: docker restart wordpress_nginx
+
+# Script de renouvellement automatique
+
+- name: Créer le script de renouvellement
+  copy:
+    dest: /usr/local/bin/renew-letsencrypt.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      certbot renew --quiet
+      docker restart wordpress_nginx
+
+# Cron de renouvellement
+
+- name: Planifier le renouvellement automatique
+  cron:
+    name: "Renouvellement Let's Encrypt"
+    hour: "9"
+    minute: "0"
+    job: "/usr/local/bin/renew-letsencrypt.sh >> /var/log/letsencrypt-renew.log 2>&1"

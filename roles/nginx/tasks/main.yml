@@ -1,0 +1,47 @@
+---
+
+# Préparation des dossiers
+
+- name: Créer le dossier nginx
+  file:
+    path: "{{ wordpress_dir }}/nginx"
+    state: directory
+    mode: '0755'
+
+- name: Créer le dossier conf.d
+  file:
+    path: "{{ wordpress_dir }}/nginx/conf.d"
+    state: directory
+    mode: '0755'
+
+- name: Créer le dossier des certificats
+  file:
+    path: "{{ wordpress_dir }}/nginx/certs"
+    state: directory
+    mode: '0755'
+
+# Configuration Nginx
+
+- name: Copier la configuration Nginx
+  template:
+    src: nginx.conf.j2
+    dest: "{{ wordpress_dir }}/nginx/conf.d/default.conf"
+    mode: '0644'
+
+# Lancement du conteneur
+
+- name: Démarrer nginx via docker-compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ wordpress_dir }}"
+    services:
+      - nginx
+    state: present
+
+# Informations utilisateur
+
+- name: Afficher les URLs d'accès
+  debug:
+    msg:
+      - "WordPress : https://{{ nginx_domain }}"
+      - "phpMyAdmin : https://{{ nginx_domain }}/phpmyadmin"
+      - "Certificat temporaire utilisé (Let’s Encrypt sera installé ensuite)"
